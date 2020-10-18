@@ -6,7 +6,7 @@ import socket, sys, re, os
 sys.path.append("../lib")       # for params
 import params
 
-from encapFramedSock import EncapFramedSock
+from encapFramedSock import EncapFramedSock    
 
 switchesVarDefaults = (
     (('-s', '--server'), 'server', "127.0.0.1:50001"),
@@ -57,6 +57,8 @@ try:
         
     info = (f"{fileName}{separator}{sizeOfFile}{separator}{remoteFileName}".encode())
     print(info)
+
+    
     print("The file's name, size and remote name file was sent")
     fsock.send(info,debug)
     content = ""
@@ -81,3 +83,4 @@ except FileNotFoundError as e:
 
     print("The file doesn't exist")
     sys.exit(0)
+

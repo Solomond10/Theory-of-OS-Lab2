@@ -26,19 +26,52 @@ print("listening on:", bindAddr)
 
 from threading import Thread;
 from encapFramedSock import EncapFramedSock
+import threading
 
+global filesBeingTransferred
+global lock
+
+filesBeingTransferred = []
+lock = threading.Lock()
+
+#Checks to see if file is already being transferred to
+def fileTransferStart(fileName):
+    if fileName in filesBeingTransferred:
+        return True
+    else:
+        lock.acquire()
+        length = len(filesBeingTransferred)
+        filesBeingTransferred.append(fileName)
+        print(filesBeingTransferred)
+        return False
+
+#Removes file after transfer is done
+def fileTransferEnd(fileName):
+    filesBeingTransferred.remove(fileName)
+    lock.release()
+    
 class Server(Thread):
     def __init__(self, sockAddr):
         Thread.__init__(self)
         self.sock, self.addr = sockAddr
         self.fsock = EncapFramedSock(sockAddr)
     def run(self):
+        
         print("new thread handling connection from", self.addr)
         fileInfo = (self.fsock.receive(debug)).decode()
         print("The file's name, size and remote name file was received")
         print("File Info: ", fileInfo)
         fileName, fileSize, remoteFileName = fileInfo.split(":")
         fileSize = int(fileSize)
+        print("File is being check to see if it is currently being transferred...")
+
+        if fileTransferStart(fileName) is True:
+            print("File is currently being transferred")
+            sys.exit(0)
+
+        else:
+            print("File is not currently being transferred")
+            pass
 
         #checks to see if file already exist
         path = os.getcwd()+"/"+remoteFileName
@@ -59,6 +92,7 @@ class Server(Thread):
                     payloadDecoded = payload.decode()
                     f.write(payloadDecoded)
                     self.fsock.send(payload, debug)
+                    fileTransferEnd(fileName)
                     print("Exiting.....")    
 
 while True:

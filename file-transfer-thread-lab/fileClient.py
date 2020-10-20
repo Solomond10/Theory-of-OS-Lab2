@@ -54,7 +54,15 @@ try:
     if sizeOfFile == 0:
         print("There's nothing in the file")
         sys.exit(0)
-        
+
+
+    fName = f"{fileName}".encode()
+    fsock.send(fName,debug)
+    print("file name is sent so that it can be checked to see if its being used")
+
+    i = input("Press Any key to continue -- The file is about to be written to on the server\n"
+        )
+    
     info = (f"{fileName}{separator}{sizeOfFile}{separator}{remoteFileName}".encode())
     print(info)
 

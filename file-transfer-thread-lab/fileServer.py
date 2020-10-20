@@ -39,39 +39,44 @@ def fileTransferStart(fileName):
     if fileName in filesBeingTransferred:
         return True
     else:
-        lock.acquire()
-        length = len(filesBeingTransferred)
         filesBeingTransferred.append(fileName)
-        print(filesBeingTransferred)
         return False
 
 #Removes file after transfer is done
 def fileTransferEnd(fileName):
     filesBeingTransferred.remove(fileName)
-    lock.release()
-    
+        
 class Server(Thread):
     def __init__(self, sockAddr):
         Thread.__init__(self)
         self.sock, self.addr = sockAddr
         self.fsock = EncapFramedSock(sockAddr)
     def run(self):
-        
         print("new thread handling connection from", self.addr)
+
+        fileName = (self.fsock.receive(debug)).decode()
+        print("File name was recieved so it can check to see if it's currently being written to")
+
+        print("Thread ", threading.current_thread() ,"is waiting for a lock")
+        lock.acquire()
+        print("Thread ", threading.current_thread() ,"lock was acquired")
+        
+        if fileTransferStart(fileName) is True:
+            print("File is currently being transferred-Try Again")
+            lock.release()
+            sys.exit(0)
+
+        else:
+            print("File is not currently being transferred")
+            pass
+
+
         fileInfo = (self.fsock.receive(debug)).decode()
         print("The file's name, size and remote name file was received")
         print("File Info: ", fileInfo)
         fileName, fileSize, remoteFileName = fileInfo.split(":")
         fileSize = int(fileSize)
         print("File is being check to see if it is currently being transferred...")
-
-        if fileTransferStart(fileName) is True:
-            print("File is currently being transferred")
-            sys.exit(0)
-
-        else:
-            print("File is not currently being transferred")
-            pass
 
         #checks to see if file already exist
         path = os.getcwd()+"/"+remoteFileName
@@ -92,6 +97,8 @@ class Server(Thread):
                     payloadDecoded = payload.decode()
                     f.write(payloadDecoded)
                     self.fsock.send(payload, debug)
+                    lock.release()
+                    print("Thread ", threading.current_thread() ,"lock was released")
                     fileTransferEnd(fileName)
                     print("Exiting.....")    
 
